@@ -1,0 +1,6 @@
+{
+  "name": "A4 Editor",
+  "description": "A mobile-first A4 document creator and PDF editor with CapCut-style intuitive controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
