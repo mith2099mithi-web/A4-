@@ -7,28 +7,32 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
-        run: |
-          git clone --depth 1 "https://github.com/${{ github.repository }}.git" .
-          git checkout "${{ github.sha }}"
+        uses: actions/checkout@v4
 
-      - name: Build Android APK
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Gradle & Build APK
         run: |
           touch .env
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          chmod +x ./gradlew || true
-          ./gradlew assembleDebug --no-daemon
+          
+          # Install Gradle directly so we do not need gradle-wrapper.jar
+          wget -q https://services.gradle.org/distributions/gradle-8.11.1-bin.zip
+          unzip -q gradle-8.11.1-bin.zip
+          export PATH="$(pwd)/gradle-8.11.1/bin:$PATH"
+          
+          # Build APK
+          gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload Debug APK
-        run: |
-          mkdir -p artifacts
-          cp app/build/outputs/apk/debug/*.apk artifacts/ || true
-          echo "APK build complete!"
-
-      - name: Save APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
