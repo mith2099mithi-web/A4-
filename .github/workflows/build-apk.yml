@@ -19,10 +19,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.11.1'
+          gradle-version: '8.12.1'
 
       - name: Prepare build environment
         run: |
@@ -30,7 +33,9 @@ jobs:
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore || true
           fi
-          yes | sdkmanager --licenses || true
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
+          fi
 
       - name: Build Debug APK with Gradle
         run: gradle assembleDebug --no-daemon --stacktrace

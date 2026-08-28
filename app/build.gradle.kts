@@ -35,10 +35,10 @@ android {
       val customKeystore = file("${rootDir}/debug.keystore")
       if (customKeystore.exists()) {
         storeFile = customKeystore
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
       }
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
     }
   }
 
