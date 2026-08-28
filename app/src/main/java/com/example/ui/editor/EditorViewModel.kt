@@ -517,27 +517,34 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun updateTableCell(tableId: String, row: Int, col: Int, text: String) {
+        val currentDoc = _document.value ?: return
         val pageIndex = _selectedPageIndex.value
-        updateDocument { doc ->
-            val updatedPages = doc.pages.mapIndexed { idx, p ->
-                if (idx == pageIndex) {
-                    val updatedTables = p.tables.map { tbl ->
-                        if (tbl.id == tableId) {
-                            val newCells = tbl.cells.mapIndexed { rIdx, rList ->
-                                if (rIdx == row) {
-                                    rList.mapIndexed { cIdx, cVal ->
-                                        if (cIdx == col) text else cVal
-                                    }
-                                } else rList
-                            }
-                            tbl.copy(cells = newCells)
-                        } else tbl
-                    }
-                    p.copy(tables = updatedTables)
-                } else p
-            }
-            doc.copy(pages = updatedPages)
+        val page = currentDoc.pages.getOrNull(pageIndex) ?: return
+        val table = page.tables.firstOrNull { it.id == tableId } ?: return
+        val existing = table.cells.getOrNull(row)?.getOrNull(col) ?: ""
+        if (existing == text) return
+
+        // Cell typing bypasses the undo stack (like text-block typing) so
+        // every keystroke doesn't push a full document snapshot.
+        val updatedPages = currentDoc.pages.mapIndexed { idx, p ->
+            if (idx == pageIndex) {
+                val updatedTables = p.tables.map { tbl ->
+                    if (tbl.id == tableId) {
+                        val newCells = tbl.cells.mapIndexed { rIdx, rList ->
+                            if (rIdx == row) {
+                                rList.mapIndexed { cIdx, cVal ->
+                                    if (cIdx == col) text else cVal
+                                }
+                            } else rList
+                        }
+                        tbl.copy(cells = newCells)
+                    } else tbl
+                }
+                p.copy(tables = updatedTables)
+            } else p
         }
+        _document.value = currentDoc.copy(pages = updatedPages, updatedAt = System.currentTimeMillis())
+        scheduleAutosave()
     }
 
     fun addTableRow(tableId: String) {

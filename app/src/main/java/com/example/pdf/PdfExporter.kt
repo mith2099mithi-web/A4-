@@ -10,6 +10,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import com.example.data.model.*
+import com.example.ui.theme.DocumentFonts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -92,7 +93,7 @@ object PdfExporter {
 
                 // 3. Draw Tables
                 pageModel.tables.forEach { table ->
-                    drawTable(canvas, table)
+                    drawTable(context, canvas, table)
                 }
 
                 // 4. Draw Images
@@ -102,7 +103,7 @@ object PdfExporter {
 
                 // 5. Draw Text Blocks
                 pageModel.textBlocks.forEach { textBlock ->
-                    drawTextBlock(canvas, textBlock)
+                    drawTextBlock(context, canvas, textBlock)
                 }
 
                 // 6. Draw Drawing Strokes (Highlighter first, then Pen)
@@ -152,7 +153,7 @@ object PdfExporter {
         }
     }
 
-    private fun drawTextBlock(canvas: Canvas, tb: TextBlock) {
+    private fun drawTextBlock(context: Context, canvas: Canvas, tb: TextBlock) {
         if (tb.text.isBlank()) return
 
         val textPaint = TextPaint().apply {
@@ -161,17 +162,8 @@ object PdfExporter {
             isAntiAlias = true
             isUnderlineText = tb.isUnderline
 
-            val typefaceStyle = when {
-                tb.isBold && tb.isItalic -> Typeface.BOLD_ITALIC
-                tb.isBold -> Typeface.BOLD
-                tb.isItalic -> Typeface.ITALIC
-                else -> Typeface.NORMAL
-            }
-            typeface = when (tb.fontFamily.lowercase()) {
-                "serif" -> Typeface.create(Typeface.SERIF, typefaceStyle)
-                "monospace" -> Typeface.create(Typeface.MONOSPACE, typefaceStyle)
-                else -> Typeface.create(Typeface.SANS_SERIF, typefaceStyle)
-            }
+            // Load the exact bundled TTF so exports match the editor canvas
+            typeface = DocumentFonts.typeface(context, tb.fontFamily, tb.isBold, tb.isItalic)
         }
 
         // Draw highlight background if any
@@ -230,7 +222,7 @@ object PdfExporter {
         }
     }
 
-    private fun drawTable(canvas: Canvas, table: TableElement) {
+    private fun drawTable(context: Context, canvas: Canvas, table: TableElement) {
         val borderPaint = Paint().apply {
             color = Color.DKGRAY
             strokeWidth = 1f
@@ -241,6 +233,7 @@ object PdfExporter {
             color = Color.BLACK
             textSize = 11f
             isAntiAlias = true
+            typeface = DocumentFonts.typeface(context, DocumentFonts.Inter.id, false, false)
         }
 
         val cellWidth = table.width / table.cols.toFloat()

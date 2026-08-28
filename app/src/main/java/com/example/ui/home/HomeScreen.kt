@@ -276,12 +276,15 @@ fun HomeScreen(
                 }
             } else {
                 items(documents, key = { it.id }) { doc ->
-                    DocumentItemCard(
-                        doc = doc,
-                        onClick = { onOpenDocument(doc.id) },
-                        onRename = { docToRename = doc },
-                        onDelete = { docToDelete = doc }
-                    )
+                    // animateItem: deleted / reordered cards glide instead of popping
+                    Box(modifier = Modifier.animateItem()) {
+                        DocumentItemCard(
+                            doc = doc,
+                            onClick = { onOpenDocument(doc.id) },
+                            onRename = { docToRename = doc },
+                            onDelete = { docToDelete = doc }
+                        )
+                    }
                 }
             }
         }
