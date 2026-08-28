@@ -19,18 +19,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Gradle & Build APK
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
         run: |
           touch .env
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          
-          # Install Gradle directly so we do not need gradle-wrapper.jar
-          wget -q https://services.gradle.org/distributions/gradle-8.11.1-bin.zip
-          unzip -q gradle-8.11.1-bin.zip
-          export PATH="$(pwd)/gradle-8.11.1/bin:$PATH"
-          
-          # Build APK
-          gradle assembleDebug --no-daemon --stacktrace
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
