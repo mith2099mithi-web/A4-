@@ -7,39 +7,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
+      - name: Checkout Code
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y openjdk-17-jdk wget unzip
-          sudo update-java-alternatives --set java-1.17.0-openjdk-amd64 || true
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> $GITHUB_ENV
+          git clone --depth 1 "https://github.com/${{ github.repository }}.git" .
+          git checkout "${{ github.sha }}"
 
-      - name: Install Gradle
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.11.1-bin.zip
-          unzip -q gradle-8.11.1-bin.zip
-          sudo mv gradle-8.11.1 /opt/gradle
-          echo "/opt/gradle/bin" >> $GITHUB_PATH
-
-      - name: Prepare build files
+      - name: Build Android APK
         run: |
           touch .env
-          echo "sdk.dir=$ANDROID_HOME" > local.properties || true
-          if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore || true
-          fi
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x ./gradlew || true
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Build Debug APK
+      - name: Upload Debug APK
         run: |
-          gradle assembleDebug --stacktrace --info
+          mkdir -p artifacts
+          cp app/build/outputs/apk/debug/*.apk artifacts/ || true
+          echo "APK build complete!"
 
-      - name: Upload APK
+      - name: Save APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
