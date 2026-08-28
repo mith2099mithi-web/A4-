@@ -22,12 +22,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.12.1'
+      - name: Install Android Platform & Build Tools
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" || true
 
-      - name: Prepare build environment
+      - name: Prepare environment & Keystore
         run: |
           touch .env
           if [ -f debug.keystore.base64 ]; then
@@ -37,15 +37,16 @@ jobs:
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
           fi
 
-      - name: Build Debug APK with Gradle
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.12.1'
+
+      - name: Build Debug APK
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK as Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-
-
