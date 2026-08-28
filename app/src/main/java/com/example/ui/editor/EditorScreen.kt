@@ -4,6 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -104,6 +112,13 @@ fun EditorScreen(
         viewModel.loadDocument(documentId)
     }
 
+    // System back also flushes any pending autosave changes before leaving,
+    // matching the behaviour of the top-bar back button.
+    BackHandler {
+        viewModel.saveImmediately()
+        onNavigateBack()
+    }
+
     val currentDoc = document
 
     Scaffold(
@@ -124,15 +139,24 @@ fun EditorScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = when (saveStatus) {
-                                SaveStatus.Saving -> "Saving..."
-                                SaveStatus.Saved -> "Saved"
+                        AnimatedContent(
+                            targetState = saveStatus,
+                            transitionSpec = {
+                                (slideInVertically(tween(180)) { it } + fadeIn(tween(160))) togetherWith
+                                    (slideOutVertically(tween(140)) { -it } + fadeOut(tween(120)))
                             },
-                            style = MaterialTheme.typography.labelSmall,
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            label = "saveStatusTransition"
+                        ) { status ->
+                            Text(
+                                text = when (status) {
+                                    SaveStatus.Saving -> "Saving..."
+                                    SaveStatus.Saved -> "Saved"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 navigationIcon = {

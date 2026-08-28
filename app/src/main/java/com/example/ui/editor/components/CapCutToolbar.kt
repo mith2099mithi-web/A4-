@@ -1,8 +1,15 @@
 package com.example.ui.editor.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -25,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +44,7 @@ import com.example.data.model.TextBlock
 import com.example.ui.editor.DrawToolState
 import com.example.ui.editor.DrawToolType
 import com.example.ui.editor.ToolbarMode
+import com.example.ui.theme.DocumentFonts
 
 enum class TextSubTab(val label: String) {
     TEXT("Text"),
@@ -92,7 +101,17 @@ fun CapCutToolbar(
         Column(modifier = Modifier.fillMaxWidth()) {
             AnimatedContent(
                 targetState = mode,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                transitionSpec = {
+                    // New toolbar slides up from the bottom edge while the old
+                    // one fades and slides away — CapCut-style contextual swap.
+                    (slideInVertically(
+                        animationSpec = tween(260, easing = FastOutSlowInEasing)
+                    ) { it / 3 } + fadeIn(tween(220))) togetherWith
+                        (slideOutVertically(
+                            animationSpec = tween(180, easing = FastOutLinearInEasing)
+                        ) { -it / 4 } + fadeOut(tween(140))) using
+                        SizeTransform(clip = false)
+                },
                 label = "ToolbarTransition"
             ) { targetMode ->
                 when (targetMode) {
@@ -297,8 +316,16 @@ private fun TextContextualToolbar(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Content per active sub-tab
-        when (activeSubTab) {
+        // Content per active sub-tab, with a smooth slide/fade between tabs
+        AnimatedContent(
+            targetState = activeSubTab,
+            transitionSpec = {
+                (fadeIn(tween(180)) + slideInVertically(tween(240)) { it / 10 }) togetherWith
+                    fadeOut(tween(120))
+            },
+            label = "TextSubTabTransition"
+        ) { subTab ->
+            when (subTab) {
             TextSubTab.TEXT -> {
                 val isBold = textBlock?.isBold == true
                 val isItalic = textBlock?.isItalic == true
@@ -552,52 +579,58 @@ private fun TextContextualToolbar(
             }
 
             TextSubTab.FONT -> {
-                val currentFont = textBlock?.fontFamily ?: "Inter"
-                val fonts = listOf("Inter", "Roboto", "Poppins", "Open Sans", "Lato", "Montserrat")
+                val currentFont = DocumentFonts.byId(textBlock?.fontFamily)
 
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp)
                 ) {
-                    fonts.forEach { fontName ->
-                        val isSelected = currentFont.equals(fontName, ignoreCase = true)
+                    DocumentFonts.all.forEach { font ->
+                        val isSelected = currentFont == font
+                        val rowBg by animateColorAsState(
+                            targetValue = if (isSelected)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            else Color.Transparent,
+                            animationSpec = tween(180),
+                            label = "fontRowBg"
+                        )
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { onFormat(null, null, null, null, fontName, null, null, false, null, null) }
-                                .padding(vertical = 10.dp, horizontal = 8.dp),
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(rowBg)
+                                .clickable {
+                                    onFormat(null, null, null, null, font.id, null, null, false, null, null)
+                                }
+                                .padding(vertical = 12.dp, horizontal = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = fontName,
-                                fontSize = 15.sp,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column {
+                                Text(
+                                    text = font.displayName,
+                                    fontFamily = font.composeFamily,
+                                    fontSize = 17.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = font.sample,
+                                    fontFamily = font.composeFamily,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             if (isSelected) {
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = "Selected",
-                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    OutlinedButton(
-                        onClick = { /* Additional font packs */ },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("More Fonts")
                     }
                 }
             }
@@ -737,6 +770,7 @@ private fun TextContextualToolbar(
                         }
                     }
                 }
+            }
             }
         }
     }

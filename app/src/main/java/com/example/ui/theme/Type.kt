@@ -2,35 +2,27 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 
-// Set of Material typography styles to start with
-val Typography =
-  Typography(
-    bodyLarge =
-      TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.5.sp,
-      )
-    /* Other default text styles to override
-    titleLarge = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Normal,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    )
-    */
-  )
+/** App-wide font: bundled Inter, consistent with the default document font. */
+val AppFontFamily = DocumentFonts.Inter.composeFamily
+
+private val defaults = Typography()
+private fun TextStyle.withAppFont(): TextStyle = copy(fontFamily = AppFontFamily)
+
+val Typography = Typography(
+    displayLarge = defaults.displayLarge.withAppFont(),
+    displayMedium = defaults.displayMedium.withAppFont(),
+    displaySmall = defaults.displaySmall.withAppFont(),
+    headlineLarge = defaults.headlineLarge.withAppFont(),
+    headlineMedium = defaults.headlineMedium.withAppFont(),
+    headlineSmall = defaults.headlineSmall.withAppFont(),
+    titleLarge = defaults.titleLarge.withAppFont(),
+    titleMedium = defaults.titleMedium.withAppFont(),
+    titleSmall = defaults.titleSmall.withAppFont(),
+    bodyLarge = defaults.bodyLarge.withAppFont(),
+    bodyMedium = defaults.bodyMedium.withAppFont(),
+    bodySmall = defaults.bodySmall.withAppFont(),
+    labelLarge = defaults.labelLarge.withAppFont(),
+    labelMedium = defaults.labelMedium.withAppFont(),
+    labelSmall = defaults.labelSmall.withAppFont()
+)
